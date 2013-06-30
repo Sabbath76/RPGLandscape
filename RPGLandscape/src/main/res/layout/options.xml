@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+      android:layout_width="match_parent"
+      android:layout_height="match_parent">
+
+    <item android:id="@+id/play"
+          android:title="Play" />
+    <item android:id="@+id/pan"
+          android:title="Pan" />
+    <item android:id="@+id/Grass"
+          android:title="Grass" />
+    <item android:id="@+id/Earth"
+          android:title="Earth" />
+    <item android:id="@+id/Water"
+          android:title="Water" />
+    <item android:id="@+id/Rocks"
+          android:title="Rocks" />
+    <item android:id="@+id/Path"
+          android:title="Path" />
+    <item android:id="@+id/RenderBuffered"
+          android:title="RenderBuffered" />
+    <item android:id="@+id/RenderSmoothed"
+          android:title="RenderSmoothed" />
+    <item android:id="@+id/RenderDebug"
+          android:title="RenderDebug" />
+    <item android:id="@+id/QuestEditor"
+          android:title="Quest Editor" />
+    <item android:id="@+id/Save"
+          android:title="Save" />
+</menu>
