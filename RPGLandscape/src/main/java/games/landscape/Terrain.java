@@ -2,6 +2,7 @@ package games.landscape;
 
 import java.util.EnumMap;
 import java.util.EnumSet;
+import java.util.Random;
 
 import android.content.Context;
 import android.content.res.Resources;
@@ -87,8 +88,12 @@ public class Terrain {
 	EnumMap<ETerrainType, Bitmap> m_bitmaps;
 	EnumMap<EAlphaMap, Bitmap> m_alphaBitmaps;
 	EnumMap<EAlphaMap, Bitmap> m_fringeBitmaps;
-	
-	Bitmap m_buffer[];
+
+    Bitmap m_brushStroke;
+
+    Random m_random;
+
+    Bitmap m_buffer[];
 	int m_currentBuffer = 0;
 	Canvas m_canvasBuffer;
 	Rect m_lastWindow;
@@ -138,9 +143,12 @@ public class Terrain {
 		m_lastWindow = new Rect();
 		m_lastQuads = new Rect();
 
-		m_higherPriority = new EnumMap<ETerrainType, EnumSet<ETerrainType>>(ETerrainType.class);
+        m_random = new Random();
+
+        m_higherPriority = new EnumMap<ETerrainType, EnumSet<ETerrainType>>(ETerrainType.class);
 		m_bitmaps = new EnumMap<ETerrainType, Bitmap>(ETerrainType.class);
 		Resources res = context.getResources();
+        m_brushStroke = BitmapFactory.decodeResource(res, R.drawable.paint_stroke);
 		for (ETerrainType t : ETerrainType.values())
 		{
 			Bitmap bitmap = BitmapFactory.decodeResource(res, t.textureID);
@@ -272,7 +280,7 @@ public class Terrain {
 
 		return dirs;
 	}
-	
+
 	public boolean Render(Canvas canvas, Rect window, RectF world, boolean drawSmoothed)
 	{
         mDrawSmoothed = drawSmoothed;
@@ -476,6 +484,139 @@ public class Terrain {
 		return true;
 	}
 
+
+    public boolean RenderPainted(Canvas canvas, Rect window, RectF world)
+    {
+        m_totalTime += 0.1f;
+        float world2Screen = (0.1f+window.width()) / world.width();
+        RectF quadRectF = new RectF(world.left/QUAD_SIZE, world.top/QUAD_SIZE, world.right/QUAD_SIZE, world.bottom/QUAD_SIZE);
+        Rect  quadRect  = new Rect((int)quadRectF.left, (int)quadRectF.top, (int)(quadRectF.right)+1, (int)(quadRectF.bottom)+1);
+        int quadPixels = (int)(world2Screen * QUAD_SIZE);
+
+        final int xQuads = quadRect.width()+1;
+        final int yQuads = quadRect.height()+1;
+
+        boolean sameWindow = (m_lastWindow.equals(window));
+        if (!sameWindow)
+        {
+            m_lastWindow.set(window);
+            m_buffer[0] = Bitmap.createBitmap(xQuads * quadPixels, yQuads * quadPixels, Bitmap.Config.ARGB_8888);
+            m_buffer[1] = Bitmap.createBitmap(xQuads * quadPixels, yQuads * quadPixels, Bitmap.Config.ARGB_8888);
+            m_currentBuffer = 0;
+
+            m_canvasBuffer = new Canvas(m_buffer[m_currentBuffer]);
+
+            m_quadBuffer = Bitmap.createBitmap(quadPixels, quadPixels, Bitmap.Config.ARGB_8888);
+            m_quadCanvas = new Canvas(m_quadBuffer);
+        }
+
+        boolean noChanges = false;//(m_lastQuads.equals(quadRect));
+
+        if (!noChanges)
+        {
+            Rect ints = new Rect(Math.max(quadRect.left, m_lastQuads.left), Math.max(quadRect.top, m_lastQuads.top),
+                    Math.min(quadRect.right, m_lastQuads.right), Math.min(quadRect.bottom, m_lastQuads.bottom));
+
+            m_currentBuffer = 1-m_currentBuffer;
+            m_canvasBuffer.setBitmap(m_buffer[m_currentBuffer]);
+///			m_canvasBuffer.drawRGB(100, 0, 0);
+
+            if ((ints.width() > 0) && (ints.height() > 0))
+            {
+                Rect src = new Rect((ints.left - m_lastQuads.left) * quadPixels, (ints.top-m_lastQuads.top) * quadPixels,
+                        (m_lastQuads.width() - (ints.right-m_lastQuads.right)) * quadPixels, (m_lastQuads.height() - (ints.bottom-m_lastQuads.bottom)) * quadPixels);
+                int tgtX = (ints.left-quadRect.left) * quadPixels;
+                int tgtY = (ints.top-quadRect.top) * quadPixels;
+                Rect dst = new Rect(tgtX, tgtY,
+                        tgtX+src.width(), tgtY+src.height());
+                m_canvasBuffer.drawBitmap(m_buffer[1-m_currentBuffer], src, dst, null);
+
+                if (mDrawDebug)
+                {
+                    Paint paint = new Paint();
+                    paint.setColor(0xffffffff);
+                    paint.setStyle(Style.STROKE);
+                    paint.setStrokeWidth(2.0f);
+                    m_canvasBuffer.drawRect(dst, paint);
+                }
+            }
+
+
+            int worldInc = (int)(QUAD_SIZE * world2Screen);
+
+            Rect dstRect = new Rect();
+            dstRect.left = 0;
+
+            dstRect.right = worldInc;
+
+            for (int x=quadRect.left; x<quadRect.right; x++)
+            {
+                dstRect.top    = 0;
+                dstRect.bottom = worldInc;
+
+                if ((x >= 0) && (x < WORLD_SIZE_X))
+                {
+                    for (int y=quadRect.top; y<quadRect.bottom; y++)
+                    {
+                        if ((y >= 0) && (y<WORLD_SIZE_Y))
+                        {
+//                            if (!ints.contains(x, y) || (m_terrain[x][y].scrollSpeed != 0.0f))
+                            {
+
+                                Matrix brushPos = new Matrix();
+                                float xpos = dstRect.left + (dstRect.width() * m_random.nextFloat());
+                                float ypos = dstRect.top + (dstRect.height() * m_random.nextFloat());
+                                brushPos.setTranslate(xpos, ypos);
+                                m_canvasBuffer.drawBitmap(m_brushStroke, brushPos, null);
+//                                RenderQuad(m_canvasBuffer, dstRect, x, y, quadPixels);
+                            }
+                        }
+
+                        dstRect.top    += worldInc;
+                        dstRect.bottom += worldInc;
+                    }
+                }
+
+                dstRect.left  += worldInc;
+                dstRect.right += worldInc;
+            }
+        }
+        Bitmap currentBuffer = m_buffer[m_currentBuffer];
+
+        if (doClipping)
+        {
+            if (m_clipCounter > 0)
+            {
+                canvas.drawRGB(0, 0, 0);
+                m_clipCounter--;
+            }
+            canvas.clipRect(window);
+        }
+        else
+        {
+            m_clipCounter = 2;
+            canvas.drawRGB(0, 0, 0xff);
+        }
+        Point ssPos = new Point(window.left, window.top);
+        ssPos.x -= (int)((quadRectF.left - (float)quadRect.left) * quadPixels);
+        ssPos.y -= (int)((quadRectF.top - (float)quadRect.top) * quadPixels);
+        canvas.drawBitmap(currentBuffer, ssPos.x, ssPos.y, null);
+
+/*		Paint unfilledPaint = new Paint();
+		unfilledPaint.setStyle(Style.STROKE);
+		unfilledPaint.setARGB(0xff, 0xff, 0x40, 0xff);
+		canvas.drawRect(window, unfilledPaint);
+
+		String changedRectTxt   = noChanges ? "no Changes" : "Changes";
+//		String changedWindowTxt = changedWindow ? "ChangedWindow" : "Same Window";
+		String text = String.format("w2s = %f, gridSize = %d changes: %s (%d, %d) == (%d, %d)", world2Screen, quadPixels, changedRectTxt, m_lastQuads.left, m_lastQuads.top, quadRect.left, quadRect.top);
+		canvas.drawText(text, 10, 10, unfilledPaint);
+*/
+        m_lastQuads.set(quadRect);
+
+        return true;
+    }
+
     public boolean IsBlocked(Vector2f pos)
     {
         return IsBlocked((int)(pos.x / QUAD_SIZE), (int)(pos.y / QUAD_SIZE));
@@ -493,6 +634,11 @@ public class Terrain {
         final float DELTA = 0.001f;
         final int x0 = (int)(oldPos.x / QUAD_SIZE);
         final int y0 = (int)(oldPos.y / QUAD_SIZE);
+
+        newPos.x = Math.max(newPos.x, 0);
+        newPos.y = Math.max(newPos.y, 0);
+        newPos.x = Math.min(newPos.x, WORLD_SIZE_X);
+        newPos.y = Math.min(newPos.y, WORLD_SIZE_Y);
 
         for (int numIts=0; numIts<3; numIts++)
         {

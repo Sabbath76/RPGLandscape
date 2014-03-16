@@ -7,6 +7,9 @@ import android.graphics.Bitmap;
  */
 public class Player extends character
 {
+    private float m_weaponRange = 10.0f;
+    private float m_money = 0.0f;
+
     void Update(float timePassed, World world)
     {
         super.Update(timePassed, world);
@@ -21,4 +24,14 @@ public class Player extends character
         return proj;
 
      }
+
+    public float getWeaponRange()
+    {
+        return m_weaponRange;
+    }
+
+    public void AddMoney(float amount)
+    {
+        m_money += amount;
+    }
 }

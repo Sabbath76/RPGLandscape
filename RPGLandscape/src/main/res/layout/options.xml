@@ -22,6 +22,8 @@
           android:title="RenderBuffered" />
     <item android:id="@+id/RenderSmoothed"
           android:title="RenderSmoothed" />
+    <item android:id="@+id/RenderPainted"
+          android:title="RenderPainted" />
     <item android:id="@+id/RenderDebug"
           android:title="RenderDebug" />
     <item android:id="@+id/QuestEditor"

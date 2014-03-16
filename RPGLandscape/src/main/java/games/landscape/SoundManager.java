@@ -2,6 +2,7 @@ package games.landscape;
 
 import android.content.Context;
 import android.media.AudioManager;
+import android.media.MediaPlayer;
 import android.media.SoundPool;
 
 import java.util.HashMap;
@@ -13,8 +14,11 @@ public class SoundManager
 {
     enum ESoundType
     {
+        Music,
         Hit,
-        FireArrow
+        FireArrow,
+        GetCoins,
+        GetHealth
     };
 
     static SoundManager s_soundManager = new SoundManager();
@@ -24,13 +28,19 @@ public class SoundManager
     }
 
     private SoundPool m_soundPool = null;
-    private int m_soundMap[][] = new int[2][];
+    private int m_soundMap[][] = new int[ESoundType.values().length][];
     private World m_world = null;
+    private MediaPlayer m_mediaPlayer = null;
+    private Context m_context = null;
 
     void Init(Context context, World world)
     {
-        m_soundPool = new SoundPool(2, AudioManager.STREAM_MUSIC, 100);
+        m_soundPool = new SoundPool(10, AudioManager.STREAM_MUSIC, 100);
         m_world = world;
+        m_context = context;
+
+        int musicSfx[] = new int[1];
+        musicSfx[0] = R.raw.goldenporsche;
 
         int hitSfx[] = new int[3];
         hitSfx[0] = m_soundPool.load(context, R.raw.body_hit_1, 1);
@@ -40,13 +50,26 @@ public class SoundManager
         int arrowSfx[] = new int[1];
         arrowSfx[0] = m_soundPool.load(context, R.raw.bow_fire, 1);
 
+        int getCoin[] = new int[2];
+        getCoin[0] = m_soundPool.load(context, R.raw.coins_in_hand_1, 1);
+        getCoin[1] = m_soundPool.load(context, R.raw.coins_in_hand_2, 1);
+
+        int getHealth[] = new int[2];
+        getHealth[0] = m_soundPool.load(context, R.raw.heartbeat_speeding_up_01, 1);
+        getHealth[1] = m_soundPool.load(context, R.raw.heartbeat_speeding_up_02, 1);
+
+        m_soundMap[ESoundType.Music.ordinal()] = musicSfx;
         m_soundMap[ESoundType.Hit.ordinal()] = hitSfx;
         m_soundMap[ESoundType.FireArrow.ordinal()] = arrowSfx;
+        m_soundMap[ESoundType.GetCoins.ordinal()] = getCoin;
+        m_soundMap[ESoundType.GetHealth.ordinal()] = getHealth;
     }
 
     void PlaySound(ESoundType soundType, Vector2f pos)
     {
         final int type = soundType.ordinal();
+        if (m_soundMap[type] != null)
+        {
         final int numOptions = m_soundMap[type].length;
         int option = (int) (Math.random() * numOptions);
 
@@ -56,5 +79,34 @@ public class SoundManager
         float right = t;
 
         m_soundPool.play(m_soundMap[type][option], left, right, 1, 0, 1.0f);
+        }
+    }
+
+    void PlaySound(ESoundType soundType)
+    {
+        final int type = soundType.ordinal();
+
+        if (m_soundMap[type] != null)
+        {
+            final int numOptions = m_soundMap[type].length;
+            int option = (int) (Math.random() * numOptions);
+
+            if (soundType == ESoundType.Music)
+            {
+                m_mediaPlayer = MediaPlayer.create(m_context, m_soundMap[type][option]);
+                if (m_mediaPlayer != null)
+                {
+                    m_mediaPlayer.setLooping(true);
+                    m_mediaPlayer.start();
+                }
+            }
+            else
+            {
+                float left = 1.0f;
+                float right = 1.0f;
+
+                m_soundPool.play(m_soundMap[type][option], left, right, 1, 0, 1.0f);
+            }
+        }
     }
 }

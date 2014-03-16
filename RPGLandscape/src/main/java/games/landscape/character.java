@@ -14,9 +14,9 @@ import android.graphics.RectF;
 /**
  * Created by Tom on 01/06/13.
  */
-public class character
+public class character extends entity
 {
-    public Vector2f m_pos = new Vector2f();
+//    public Vector2f m_pos = new Vector2f();
     public Vector2f m_vel = new Vector2f();
     public float    m_facing = 0.0f;
     public final float  TURN_SPEED = 6.0f;
@@ -24,17 +24,15 @@ public class character
 
     static public drawable s_defaultDeath;
 
-    public drawable m_drawable;
+//    public drawable m_drawable;
     public drawable m_death = s_defaultDeath;
 
     public float m_shadowAngle = 135.0f;
 
-    public boolean m_isSpawned = false;
     public boolean m_isDead = false;
-    protected boolean m_deleteMe = false;
-    public boolean m_canBeDeleted = true;
     public boolean m_hasCollision = true;
     public float m_radius = 0.2f;
+    private float m_health = 0.0f;
 
     float wrapAngle(float angle)
     {
@@ -57,12 +55,19 @@ public class character
     float stepTime = 0.0f;
     void Update(float timePassed, World world)
     {
+        if (timePassed > 0.4f)
+        {
+            int n=0;
+        }
         if (m_isDead)
         {
             stepTime += timePassed;
             if ((m_death == null) || (stepTime > (m_death.m_timePerFrame * m_death.m_numFrames)))
             {
                 m_deleteMe = true;
+                collectable collect = new collectable((Math.random() > 0.5) ? collectable.collectableType.Health : collectable.collectableType.Money, 1.0f);
+                collect.m_pos.set(m_pos);
+                world.m_entityManager.addCollectable(collect);
             }
         }
         else
@@ -73,6 +78,11 @@ public class character
                 world.m_terrain.CheckCollision(m_pos, newPos);
             }
             m_pos = newPos;
+
+            if (m_pos.y < 0.0f)
+            {
+                int k=0;
+            }
 
             stepTime += m_vel.length() * timePassed;
 
@@ -111,7 +121,11 @@ public class character
         {
             curDraw = m_death;
         }
+
+        curDraw.Render(stepTime, canvas, m_facing, px, py);
+/*
         int timeI = (int)(stepTime/curDraw.m_timePerFrame)%curDraw.m_numFrames;
+
 
         if (curDraw.m_pingPong)
         {
@@ -170,6 +184,7 @@ public class character
         canvas.drawBitmap(curDraw.m_bitmap, srcRect, new Rect(0, 0, frameWidth, frameHeight), null);
         canvas.setMatrix(orig);
 //        canvas.drawBitmap(m_bitmap, renderTran, null);
+*/
     }
 
     public void Hit(float damage)
@@ -179,13 +194,8 @@ public class character
         SoundManager.Get().PlaySound(SoundManager.ESoundType.Hit, m_pos);
     }
 
-    public void CanBeDeleted(boolean canBeDeleted)
+    public void AddHealth(float add)
     {
-        m_canBeDeleted = canBeDeleted;
-    }
-
-    public boolean DeleteMe()
-    {
-        return m_canBeDeleted && m_deleteMe;
+        m_health += add;
     }
 }

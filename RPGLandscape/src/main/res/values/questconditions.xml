@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string-array name="condition_array">
+        <item>Kill Targets</item>
+        <item>Converse</item>
+        <item>Complete Any</item>
+        <item>Complete All</item>
+        <item>Sequence</item>
+    </string-array>
+
+</resources>

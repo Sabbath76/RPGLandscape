@@ -15,6 +15,8 @@ import android.view.SurfaceHolder;
 import android.graphics.Rect;
 import android.graphics.RectF;
 
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -36,6 +38,8 @@ class AimAction
 
 public class LandscapeThread extends Thread
 {
+    private final drawable human;
+    private final drawable platypus;
     /** Indicate whether the surface has been created & is ready to draw */
     private boolean m_run = false;
     private Object mPauseLock = new Object();
@@ -101,6 +105,7 @@ public class LandscapeThread extends Thread
     private float m_dispTargetLW = 6.0f;
     private int m_movePointerId = -1;
     private Quest m_ActiveQuest = null;
+    private boolean m_renderBrushed = false;
 
     public LandscapeThread(SurfaceHolder surfaceHolder, Context context) 
     {
@@ -124,14 +129,14 @@ public class LandscapeThread extends Thread
         mSword = Bitmap.createScaledBitmap(sword, sword.getWidth() / 4, sword.getHeight() / 4, true);
 
         Bitmap arrow = BitmapFactory.decodeResource(mRes, R.drawable.arrow);
-        mArrow = new drawable();
+        mArrow = new drawable("arrow");
         mArrow.m_bitmap = Bitmap.createScaledBitmap(arrow, arrow.getWidth() / 2, arrow.getHeight()*2, true);
         mArrow.m_rotateToFacing = true;
 
         Bitmap platypusBMP = BitmapFactory.decodeResource(mRes, R.drawable.platmain2);
         mPlatypus = Bitmap.createScaledBitmap(platypusBMP, platypusBMP.getWidth() / 3, platypusBMP.getHeight() / 3, true);
 
-        drawable human = new drawable();
+        human = new drawable("human");
         human.m_bitmap = BitmapFactory.decodeResource(mRes, R.drawable.actor1m);
         human.m_numFrames = 4;
         human.m_numDirections = 8;
@@ -139,15 +144,28 @@ public class LandscapeThread extends Thread
         human.m_rootAtBase = true;
 
         Bitmap bloodBMP = BitmapFactory.decodeResource(mRes, R.drawable.blood);
-        drawable blood = new drawable();
+        drawable blood = new drawable("blood");
         blood.m_bitmap = Bitmap.createScaledBitmap(bloodBMP, bloodBMP.getWidth()/2, bloodBMP.getHeight()/2, true);
         blood.m_numFrames = 6;
         blood.m_timePerFrame = 0.04f;
 
         character.s_defaultDeath = blood;
 
+
+        Bitmap healthBMP = BitmapFactory.decodeResource(mRes, R.drawable.heart);
+        drawable health = new drawable("health");
+        health.m_bitmap = healthBMP;//Bitmap.createScaledBitmap(healthBMP, healthBMP.getWidth()/2, healthBMP.getHeight()/2, true);
+        health.m_rotateToFacing = true;
+        drawable.s_health = health;
+
+        Bitmap coinsBMP = BitmapFactory.decodeResource(mRes, R.drawable.coinpile);
+        drawable coins = new drawable("coins");
+        coins.m_bitmap = Bitmap.createScaledBitmap(coinsBMP, coinsBMP.getWidth()/2, coinsBMP.getHeight()/2, true);
+        coins.m_rotateToFacing = true;
+        drawable.s_money = coins;
+
         Bitmap koboldBMP = BitmapFactory.decodeResource(mRes, R.drawable.kobold);
-        drawable kobold = new drawable();
+        drawable kobold = new drawable("kobold");
         kobold.m_bitmap = Bitmap.createScaledBitmap(koboldBMP, koboldBMP.getWidth()*2, koboldBMP.getHeight()*2, true);
         kobold.m_numFrames = 3;
         kobold.m_pingPong = true;
@@ -156,7 +174,7 @@ public class LandscapeThread extends Thread
         kobold.m_rootAtBase = true;
         kobold.m_shadowScale = 1.2f;
 
-        drawable platypus = new drawable();
+        platypus = new drawable("platypus");
         platypus.m_bitmap = mPlatypus;
         platypus.m_numFrames = 1;
         platypus.m_numDirections = 1;
@@ -176,81 +194,61 @@ public class LandscapeThread extends Thread
         mob.m_pos.y = mPosY - 1.0f;
         m_world.m_entityManager.AddCharacter(mob);
 
-//        m_world.m_entityManager.addSpawnable(platypus);
         m_world.m_entityManager.addSpawnable(kobold);
-
-//        mBeanish = BitmapFactory.decodeResource(mRes, R.drawable.bean);
-//        mBackgroundImageNear = BitmapFactory.decodeResource(mRes, R.drawable.background_b);
-//        mBackgroundImageFar  = BitmapFactory.decodeResource(mRes, R.drawable.background_a);
-        
-        // don't forget to resize the background image
-//        mBackgroundImageNear = Bitmap.createScaledBitmap(mBackgroundImageNear,
-//                mCanvasWidth * 2, mCanvasHeight, true);
-
-        // don't forget to resize the background image
-//        mBackgroundImageFar = Bitmap.createScaledBitmap(mBackgroundImageFar,
-//                mCanvasWidth * 2, mCanvasHeight, true);
-
-        SetupQuests();
     }
 
-    private void SetupQuests()
+    public void SetupQuests()
     {
-        drawable human = new drawable();
-        human.m_bitmap = BitmapFactory.decodeResource(mRes, R.drawable.actor1m);
-        human.m_numFrames = 4;
-        human.m_numDirections = 8;
-        human.m_timePerFrame = 0.4f;
-        human.m_rootAtBase = true;
+        if (Quest.s_root.size() == 0)
+        {
+            Quest getWeapon = new Quest("GetWeapon", "Arm yourself", Quest.Condition.Kill);
+            TargetChar tgt = new TargetChar();
+            tgt.spawnParams = human;
+            tgt.spawn = true;
+            tgt.spawnPos = new Vector2f(3.0f, 3.0f);
+            getWeapon.AddTarget(tgt);
+            Quest killATotemAnimal = new Quest("KillTotem", "Kill a totem animal", Quest.Condition.SubQuestAny);
+            Quest killBird = new Quest("KillBird", "Kill a bird", Quest.Condition.Kill);
+            tgt = new TargetChar();
+            tgt.spawn = true;
+            tgt.spawnParams = platypus;
+            tgt.spawnPos = new Vector2f(5.0f, 4.0f);
+            killBird.AddTarget(tgt);
+            Quest killDeer = new Quest("KillDeer", "Kill a deer", Quest.Condition.Kill);
+            tgt = new TargetChar();
+            tgt.spawn = true;
+            tgt.spawnParams = platypus;
+            tgt.spawnPos = new Vector2f(6.5f, 2.0f);
+            killDeer.AddTarget(tgt);
+            Quest killBear = new Quest("KillBear", "Kill a bear", Quest.Condition.Kill);
+            tgt = new TargetChar();
+            tgt.spawn = true;
+            tgt.spawnParams = platypus;
+            tgt.spawnPos = new Vector2f(7.2f, 3.0f);
+            killBear.AddTarget(tgt);
 
-        drawable platypus = new drawable();
-        platypus.m_bitmap = mPlatypus;
-        platypus.m_numFrames = 1;
-        platypus.m_numDirections = 1;
-        platypus.m_renderAngle = 200.0f;
-        platypus.m_rotateToFacing = true;
+            killATotemAnimal.AddSubQuest(killBird);
+            killATotemAnimal.AddSubQuest(killDeer);
+            killATotemAnimal.AddSubQuest(killBear);
+            Quest tellGeoff = new Quest("TellGeoff", "Return To Geoff", Quest.Condition.Converse);
 
-        Quest getWeapon = new Quest("GetWeapon", "Arm yourself", Quest.Condition.Kill);
-        TargetChar tgt = new TargetChar();
-        tgt.spawnParams = human;
-        tgt.spawn = true;
-        tgt.spawnPos = new Vector2f(3.0f, 3.0f);
-        getWeapon.AddTarget(tgt);
-        Quest killATotemAnimal = new Quest("KillTotem", "Kill a totem animal", Quest.Condition.SubQuestAny);
-        Quest killBird = new Quest("KillBird", "Kill a bird", Quest.Condition.Kill);
-        tgt = new TargetChar();
-        tgt.spawn = true;
-        tgt.spawnParams = platypus;
-        tgt.spawnPos = new Vector2f(5.0f, 4.0f);
-        killBird.AddTarget(tgt);
-        Quest killDeer = new Quest("KillDeer", "Kill a deer", Quest.Condition.Kill);
-        tgt = new TargetChar();
-        tgt.spawn = true;
-        tgt.spawnParams = platypus;
-        tgt.spawnPos = new Vector2f(6.5f, 2.0f);
-        killDeer.AddTarget(tgt);
-        Quest killBear = new Quest("KillBear", "Kill a bear", Quest.Condition.Kill);
-        tgt = new TargetChar();
-        tgt.spawn = true;
-        tgt.spawnParams = platypus;
-        tgt.spawnPos = new Vector2f(7.2f, 3.0f);
-        killBear.AddTarget(tgt);
+            Quest questInit = new Quest("Initiation", "Beginnings", Quest.Condition.SubQuestSequence);
+            questInit.AddSubQuest(getWeapon);
+            questInit.AddSubQuest(killATotemAnimal);
 
-        killATotemAnimal.AddSubQuest(killBird);
-        killATotemAnimal.AddSubQuest(killDeer);
-        killATotemAnimal.AddSubQuest(killBear);
-        Quest tellGeoff = new Quest("TellGeoff", "Return To Geoff", Quest.Condition.Converse);
+            questInit.AddSubQuest(tellGeoff);
 
-        Quest questInit = new Quest("Initiation", "Beginnings", Quest.Condition.SubQuestSequence);
-        questInit.AddSubQuest(getWeapon);
-        questInit.AddSubQuest(killATotemAnimal);
-        questInit.AddSubQuest(tellGeoff);
+            Quest.s_root.add(questInit);
+        }
 
-        m_ActiveQuest = questInit;
+        m_ActiveQuest = Quest.s_root.get(0);
         m_ActiveQuest.Begin();
     }
 
     public void run() {
+
+        SoundManager.Get().PlaySound(SoundManager.ESoundType.Music);
+
         while (m_run) {
             Canvas c = null;
 
@@ -421,8 +419,6 @@ public class LandscapeThread extends Thread
                 {
                     int newPointerID = event.getPointerId(pointerIdx);
 
-                    Log.d("Touch", "Up "+Integer.toString(newPointerID));
-
                     if (m_moving && (newPointerID == m_movePointerId))
                     {
                         m_moving = false;
@@ -449,10 +445,14 @@ public class LandscapeThread extends Thread
                 event.getPointerCoords(pointerIdx, pointCoords);
                 m_world.ConvertScreen2World(pointCoords, worldPos);
 
+                float selectSqrDist = m_world.m_player.getWeaponRange();
+                selectSqrDist = selectSqrDist * selectSqrDist;
+
                 final float PICK_DIST = 0.3f;
                 character hitChar = m_world.m_entityManager.GetHit(worldPos, PICK_DIST);
 
-                if ((hitChar != null) && (hitChar != m_world.m_player))
+                if ((hitChar != null) && (hitChar != m_world.m_player)
+                        && (hitChar.m_pos.distanceSquared(m_world.m_player.m_pos) < selectSqrDist))
                 {
                     AimAction newAim = new AimAction();
                     newAim.aimTime = 0.0f;
@@ -482,7 +482,7 @@ public class LandscapeThread extends Thread
                 for (int pointerIdx = 0; pointerIdx < event.getPointerCount(); pointerIdx++)
                 {
                     int newPointerID = event.getPointerId(pointerIdx);
-                    Log.d("Touch", "Down "+Integer.toString(newPointerID));
+//                    Log.d("Touch", "Down "+Integer.toString(newPointerID));
                     event.getPointerCoords(pointerIdx, pointCoords);
                     m_world.ConvertScreen2World(pointCoords, worldPos);
 
@@ -520,7 +520,7 @@ public class LandscapeThread extends Thread
                 for (int pointerIdx = 0; pointerIdx < event.getPointerCount(); pointerIdx++)
                 {
                     int newPointerID = event.getPointerId(pointerIdx);
-                    Log.d("Touch", "Move "+Integer.toString(newPointerID));
+  //                  Log.d("Touch", "Move "+Integer.toString(newPointerID));
 
                     if (m_moving && (newPointerID == m_movePointerId))
                     {
@@ -713,7 +713,11 @@ public class LandscapeThread extends Thread
     {
         if (canvas != null)
         {
-            if (m_renderBuffered && !m_painting)
+            if (m_renderBrushed)
+            {
+                m_world.m_terrain.RenderPainted(canvas, m_world.m_screenWindow, m_world.m_worldWindow);
+            }
+            else if (m_renderBuffered && !m_painting)
             {
                 m_world.m_terrain.RenderBuffered(canvas, m_world.m_screenWindow, m_world.m_worldWindow, m_renderSmoothed);
             }
@@ -865,6 +869,11 @@ public class LandscapeThread extends Thread
             mPaused = false;
             mPauseLock.notifyAll();
         }
+    }
+
+    public void ToggleRenderPainted()
+    {
+        m_renderBrushed = !m_renderBrushed;
     }
 
     public void ToggleRenderBuffered()

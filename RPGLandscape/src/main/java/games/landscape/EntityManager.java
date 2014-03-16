@@ -27,16 +27,22 @@ public class EntityManager
     public character GetHit(Vector2f pos, float range)
     {
         final float rangeSqr = range*range;
-        for (character charTest : m_entities)
+        for (entity entTest : m_entities)
         {
-            if (charTest.m_pos.distanceSquared(pos) < rangeSqr)
-                return charTest;
+            if (entTest instanceof character)
+            {
+                character charTest = (character )entTest;
+                if (charTest.m_pos.distanceSquared(pos) < rangeSqr)
+                    return charTest;
+            }
         }
 
         return null;
     }
 
-    List<character> m_entities = new ArrayList<character>();
+    List<entity> m_spawnEntities = new ArrayList<entity>();
+    List<entity> m_entities = new ArrayList<entity>();
+    List<collectable> m_collectables = new ArrayList<collectable>();
     int m_numSpawned = 0;
     int m_maxSpawn = 5;
     drawable m_spawnTemplate = null;
@@ -45,7 +51,7 @@ public class EntityManager
     {
         try
         {
-        for (character charRender : m_entities)
+        for (entity charRender : m_entities)
         {
             charRender.Render(canvas, screenWindow, worldWindow);
         }
@@ -58,8 +64,8 @@ public class EntityManager
 
     public void Update(float timeInSecs, World world)
     {
-        List<character> deleteList = null;
-        for (character charUpdate : m_entities)
+        List<entity> deleteList = null;
+        for (entity charUpdate : m_entities)
         {
             charUpdate.Update(timeInSecs, world);
             boolean delete = charUpdate.DeleteMe();
@@ -71,11 +77,17 @@ public class EntityManager
             {
                 if (deleteList == null)
                 {
-                    deleteList = new ArrayList<character>();
+                    deleteList = new ArrayList<entity>();
                 }
                 deleteList.add(charUpdate);
             }
         }
+
+        for (entity charSpawn : m_spawnEntities)
+        {
+            m_entities.add(0, charSpawn);
+        }
+        m_spawnEntities.clear();
 
         if (m_numSpawned < m_maxSpawn)
         {
@@ -127,7 +139,7 @@ public class EntityManager
 
         if (deleteList != null)
         {
-            for (character charDelete : deleteList)
+            for (entity charDelete : deleteList)
             {
                 if (charDelete.m_isSpawned)
                     m_numSpawned--;
@@ -139,5 +151,10 @@ public class EntityManager
     public void addSpawnable(drawable newDrawable)
     {
         m_spawnTemplate = newDrawable;
+    }
+
+    public void addCollectable(collectable collect)
+    {
+        m_spawnEntities.add(collect);
     }
 }

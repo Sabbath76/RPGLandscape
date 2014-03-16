@@ -64,6 +64,22 @@ public class LandscapeActivity extends Activity {
                 e.printStackTrace();
             }
 
+            try
+            {
+                FileInputStream fis = openFileInput(Quest.QUEST_FILENAME);
+                Quest.loadAll(fis);
+                fis.close();
+            }
+            catch (IOException e)
+            {
+                e.printStackTrace();
+            }
+            catch (ClassNotFoundException e)
+            {
+                e.printStackTrace();
+            }
+
+            mThread.SetupQuests();
         }
     }
 
@@ -156,6 +172,12 @@ public class LandscapeActivity extends Activity {
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.layout.options, menu);
 
+        menu.getItem(3/*R.id.Earth*/).setIcon(ETerrainType.Earth.textureID);
+        menu.getItem(2/*R.id.Grass*/).setIcon(ETerrainType.Grass.textureID);
+        menu.getItem(5/*R.id.Rocks*/).setIcon(ETerrainType.Rocks.textureID);
+        menu.getItem(4/*R.id.Water*/).setIcon(ETerrainType.Water.textureID);
+        menu.getItem(6/*R.id.Path*/).setIcon(ETerrainType.Path.textureID);
+
         return true;
     }
 
@@ -176,14 +198,6 @@ public class LandscapeActivity extends Activity {
 
             case R.id.Grass:
             {
-/*                LayoutInflater layoutInflater = (LayoutInflater)getBaseContext().getSystemService(LAYOUT_INFLATER_SERVICE);
-                View popupView = layoutInflater.inflate(R.layout.paints, null);
-
-                final PopupWindow popupWindow = new PopupWindow(
-                        popupView,
-                        LayoutParams.WRAP_CONTENT,
-                        LayoutParams.WRAP_CONTENT);
-*/
                 mThread.SetPaint(ETerrainType.Grass);
                 return true;
             }
@@ -221,6 +235,12 @@ public class LandscapeActivity extends Activity {
             case R.id.RenderSmoothed:
             {
                 mThread.ToggleRenderSmoothed();
+                return true;
+            }
+
+            case R.id.RenderPainted:
+            {
+                mThread.ToggleRenderPainted();
                 return true;
             }
 

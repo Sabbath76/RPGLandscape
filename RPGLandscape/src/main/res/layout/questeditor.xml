@@ -1,30 +1,58 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              xmlns:tools="http://schemas.android.com/tools"
               android:orientation="vertical"
               android:layout_width="match_parent"
               android:layout_height="match_parent">
 
     <EditText
             android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/editTitle"
+            android:layout_gravity="center"/>
+
+    <EditText
+            android:layout_width="fill_parent"
             android:layout_height="114dp"
             android:inputType="textMultiLine"
             android:ems="10"
-            android:id="@+id/editText"
-            android:layout_gravity="left|center_vertical"/>
+            android:id="@+id/editblurb"
+            android:layout_gravity="center"/>
+
+    <Spinner
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/questtype"
+            android:layout_gravity="center"/>
 
     <Button
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Add Target"
-            android:id="@+id/button"
+            android:id="@+id/addtarget"
             android:layout_gravity="right|center_vertical"/>
 
     <ListView
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_height="297dp"
             android:id="@+id/targetList"
             android:layout_gravity="center"
             android:layout_marginTop="4dp"
-            android:clickable="true"/>
+            android:clickable="true"
+            tools:listitem="@layout/targetcharitem"/>
+
+    <ListView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/subquests"
+            android:layout_gravity="center"/>
+
+    <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="New Button"
+            android:id="@+id/done"
+            android:layout_gravity="right|center_vertical"/>
+
 </LinearLayout>

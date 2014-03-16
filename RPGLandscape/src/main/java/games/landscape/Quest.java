@@ -1,5 +1,12 @@
 package games.landscape;
 
+import android.os.Bundle;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -9,16 +16,95 @@ import java.util.List;
 
 class TargetChar
 {
-    public Vector2f spawnPos;
-    public character character;
-    public drawable spawnParams;
-    public boolean kill;
-    public boolean spawn;
+    public Vector2f spawnPos = new Vector2f(0.0f, 0.0f);
+    public character character = null;
+    public drawable spawnParams = null;
+    public boolean kill = false;
+    public boolean spawn = true;
 }
 
 
 public class Quest
 {
+    public static final String QUEST_FILENAME = "Quest6";
+
+    public static void saveAll(OutputStream outputStream) throws IOException
+    {
+        ObjectOutputStream objectOutputStream = new ObjectOutputStream(outputStream);
+        Integer numQuests = s_root.size();
+        objectOutputStream.write(numQuests);
+        for (Quest quest : s_root)
+        {
+            quest.save(objectOutputStream);
+        }
+    }
+    public static void loadAll(InputStream inputStream) throws IOException, ClassNotFoundException {
+        ObjectInputStream objectInputStream = new ObjectInputStream(inputStream);
+        int numQuests = objectInputStream.read();
+
+        s_root.clear();
+        for(int i=0; i<numQuests; i++)
+        {
+            Quest rootQuest = new Quest();
+            rootQuest.load(objectInputStream);
+            s_root.add(rootQuest);
+        }
+    }
+
+    private void save(ObjectOutputStream outputStream) throws IOException
+    {
+        outputStream.write(m_condition.ordinal());
+        outputStream.writeObject(m_name);
+        outputStream.writeObject(m_blurb);
+        int numSubQuests = (m_subQuests != null) ? m_subQuests.size() : 0;
+        outputStream.write(numSubQuests);
+        if (m_subQuests != null)
+        {
+            for(Quest quest : m_subQuests)
+            {
+                quest.save(outputStream);
+            }
+        }
+        int numTargets = (m_targets != null) ? m_targets.size() : 0;
+        outputStream.write(numTargets);
+        if (m_targets != null)
+        {
+            for (TargetChar tChar : m_targets)
+            {
+                outputStream.write(drawable.s_items.indexOf(tChar.spawnParams));
+                outputStream.writeObject(tChar.spawnPos);
+                outputStream.writeBoolean(tChar.spawn);
+                outputStream.writeBoolean(tChar.kill);
+            }
+        }
+    }
+
+    private void load(ObjectInputStream inputStream) throws IOException, ClassNotFoundException
+    {
+        m_condition = Condition.values()[inputStream.read()];
+        m_name = (String) inputStream.readObject();
+        m_blurb = (String) inputStream.readObject();
+        int numSubQuests = inputStream.read();
+        for(int i=0; i<numSubQuests; i++)
+        {
+            Quest subQuest = new Quest();
+            subQuest.load(inputStream);
+            subQuest.m_parent = this;
+            m_subQuests.add(subQuest);
+        }
+        int numTargets = inputStream.read();
+        for(int i=0; i<numTargets; i++)
+        {
+            TargetChar tChar = new TargetChar();
+            int drawableIdx = inputStream.read();
+            tChar.spawnParams = drawable.s_items.get(drawableIdx%drawable.s_items.size());
+            tChar.spawnPos = (Vector2f)inputStream.readObject();
+            tChar.spawn = inputStream.readBoolean();
+            tChar.kill = inputStream.readBoolean();
+            m_targets.add(tChar);
+        }
+    }
+
     public enum Condition
     {
         Kill,
@@ -37,6 +123,21 @@ public class Quest
     String m_blurb;
     int m_activeSubQuest;
     boolean m_flaggedCompletion = false;
+    Quest m_parent = null;
+
+    static List<Quest> s_root = new ArrayList<Quest>();
+
+
+    public Quest()
+    {
+        m_name = null;
+        m_blurb = null;
+        m_subQuests = null;
+        m_condition = null;
+        m_activeSubQuest = 0;
+        m_subQuests = new ArrayList<Quest>();
+        m_targets = new ArrayList<TargetChar>();
+    }
 
     public Quest(String name, String blurb, Condition condition)
     {
@@ -73,11 +174,13 @@ public class Quest
     public void AddSubQuest(Quest subQuest)
     {
         m_subQuests.add(subQuest);
+        subQuest.m_parent = this;
     }
 
     public void AddFollowOn(Quest followOnQuest)
     {
         m_followOn.add(followOnQuest);
+        followOnQuest.m_parent = this;
     }
 
     public void Begin()
