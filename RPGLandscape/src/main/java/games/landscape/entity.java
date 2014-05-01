@@ -11,7 +11,7 @@ public class entity
 {
     public Vector2f m_pos = new Vector2f();
     public drawable m_drawable;
-    private float m_time = 0.0f;
+    public float m_time = 0.0f;
     protected boolean m_deleteMe = false;
     public boolean m_canBeDeleted = true;
     public boolean m_isSpawned = false;

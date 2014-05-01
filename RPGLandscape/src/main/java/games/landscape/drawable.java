@@ -27,6 +27,8 @@ public class drawable
     public float    m_timePerFrame = 1.0f;
     public float    m_shadowScale = 1.0f;
     public int      m_shadowColour = 0x80000000;
+    public int      m_shadowOffsX = 14;
+    public int      m_shadowOffsY = 20;
 
     drawable(String name)
     {
@@ -80,7 +82,7 @@ public class drawable
         renderShadow.set(renderTran);
         if (m_rotateToFacing)
         {
-            renderShadow.postTranslate(px+14, py+20);
+            renderShadow.postTranslate(px+m_shadowOffsX, py+m_shadowOffsY);
         }
         else
         {

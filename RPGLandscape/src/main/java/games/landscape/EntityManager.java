@@ -10,6 +10,7 @@ import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Vector;
 
 /**
  * Created by Tom on 07/06/13.
@@ -45,7 +46,9 @@ public class EntityManager
     List<collectable> m_collectables = new ArrayList<collectable>();
     int m_numSpawned = 0;
     int m_maxSpawn = 5;
-    drawable m_spawnTemplate = null;
+    List<spawnParams> m_spawnables = new ArrayList<spawnParams>();
+    int m_spawnTotal = 0;
+//    drawable m_spawnTemplate = null;
 
     public void Render(Canvas canvas, Rect screenWindow, RectF worldWindow)
     {
@@ -61,6 +64,25 @@ public class EntityManager
 
         }
     }
+
+    public void findCharsInRange(Vector2f pos, float range, character.EFaction faction, List<character> foundChars)
+    {
+        float sqrRange = range*range;
+        for (entity ent : m_entities)
+        {
+            if (character.class.isAssignableFrom(ent.getClass()))
+            {
+                character charCur = (character)ent;
+                if ((ent.m_pos.distanceSquared(pos) < sqrRange)
+                    && !charCur.IsDead()
+                    && (charCur.m_faction == faction))
+                {
+                    foundChars.add(charCur);
+                }
+            }
+        }
+    }
+
 
     public void Update(float timeInSecs, World world)
     {
@@ -128,12 +150,39 @@ public class EntityManager
 
             if (!world.m_terrain.IsBlocked(newPos))
             {
-                AICharacter newAI = new AICharacter();
+                float spawnNum = (float)Math.random()*(float)m_spawnTotal;
+                for (spawnParams params : m_spawnables)
+                {
+                    spawnNum -= params.chance;
+                    if (spawnNum <= 0)
+                    {
+                        character newChar = null;
+                        if (params.charType == spawnParams.ECharacterType.Archer)
+                        {
+                            newChar = new AIArcher();
+                            newChar.m_faction = character.EFaction.Bad;
+                        }
+                        else
+                        {
+                            newChar = new AICharacter();
+                        }
+                        newChar.m_drawable = params.gfx;
+                        newChar.m_pos.set(newPos);
+                        newChar.m_isSpawned = true;
+                        m_entities.add(newChar);
+                        m_numSpawned++;
+
+                        break;
+                    }
+                }
+
+/*                AICharacter newAI = new AICharacter();
                 newAI.m_drawable = m_spawnTemplate;
                 newAI.m_pos.set(newPos);
                 newAI.m_isSpawned = true;
                 m_entities.add(newAI);
                 m_numSpawned++;
+                */
             }
         }
 
@@ -148,13 +197,20 @@ public class EntityManager
         }
     }
 
-    public void addSpawnable(drawable newDrawable)
+    public void addSpawnable(spawnParams newSpawner)
     {
-        m_spawnTemplate = newDrawable;
+        m_spawnables.add(newSpawner);
+        m_spawnTotal += newSpawner.chance;
     }
 
     public void addCollectable(collectable collect)
     {
         m_spawnEntities.add(collect);
     }
+
+    public void addEntity(entity ent)
+    {
+        m_spawnEntities.add(ent);
+    }
+
 }

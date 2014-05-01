@@ -14,17 +14,25 @@ import android.graphics.RectF;
 /**
  * Created by Tom on 01/06/13.
  */
+
 public class character extends entity
 {
-//    public Vector2f m_pos = new Vector2f();
     public Vector2f m_vel = new Vector2f();
     public float    m_facing = 0.0f;
     public final float  TURN_SPEED = 6.0f;
     public int m_shadowColour = 0x80000000;
 
+    public enum EFaction
+    {
+        Good,
+        Bad,
+        Neutral
+    };
+
+    EFaction m_faction = EFaction.Neutral;
+
     static public drawable s_defaultDeath;
 
-//    public drawable m_drawable;
     public drawable m_death = s_defaultDeath;
 
     public float m_shadowAngle = 135.0f;
@@ -32,7 +40,17 @@ public class character extends entity
     public boolean m_isDead = false;
     public boolean m_hasCollision = true;
     public float m_radius = 0.2f;
-    private float m_health = 0.0f;
+    public float m_health = 1.0f;
+
+    boolean isEnemy(character target)
+    {
+        if ((target.m_faction == EFaction.Good) && (m_faction == EFaction.Bad))
+            return true;
+        if ((target.m_faction == EFaction.Bad) && (m_faction == EFaction.Good))
+            return true;
+
+        return false;
+    }
 
     float wrapAngle(float angle)
     {
@@ -123,75 +141,18 @@ public class character extends entity
         }
 
         curDraw.Render(stepTime, canvas, m_facing, px, py);
-/*
-        int timeI = (int)(stepTime/curDraw.m_timePerFrame)%curDraw.m_numFrames;
-
-
-        if (curDraw.m_pingPong)
-        {
-            final int effectiveFrames = (curDraw.m_numFrames*2)-2;
-            timeI = (int)(stepTime/curDraw.m_timePerFrame)%effectiveFrames;
-            if (timeI >= curDraw.m_numFrames)
-                timeI = effectiveFrames - timeI;
-        }
-        int frameWidth = curDraw.m_bitmap.getWidth() / curDraw.m_numFrames;
-        int frameHeight = curDraw.m_bitmap.getHeight() / curDraw.m_numDirections;
-        int dirFrame = 0;
-
-        int direction = (int)(((m_facing + Math.PI) * curDraw.m_numDirections / (2.0f * Math.PI)) + 0.5f);
-        if (curDraw.m_numDirections == 8)
-        {
-            final int directions[] = {1, 6, 3, 7, 2, 5, 0, 4};
-            dirFrame = directions[direction%8];
-        }
-        else if (curDraw.m_numDirections == 4)
-        {
-            final int directions[] = {1, 3, 2, 0};
-            dirFrame = directions[direction%4];
-        }
-
-        Rect srcRect = new Rect(timeI*frameWidth, dirFrame*frameHeight, (timeI+1)*frameWidth, (dirFrame+1)*frameHeight);
-        Matrix orig = canvas.getMatrix();
-        Matrix renderTran = new Matrix();
-        if (curDraw.m_rootAtBase)
-            renderTran.setTranslate(-(frameWidth / 2), -frameHeight+20.0f);
-        else
-            renderTran.setTranslate(-(frameWidth / 2), -(frameHeight / 2));
-        if (curDraw.m_rotateToFacing)
-            renderTran.postRotate((float) Math.toDegrees(m_facing) + curDraw.m_renderAngle);
-
-        Matrix renderShadow = new Matrix();
-        renderShadow.set(renderTran);
-        if (curDraw.m_rotateToFacing)
-        {
-            renderShadow.postTranslate(px+14, py+20);
-        }
-        else
-        {
-            renderShadow.postSkew(-0.5f, 0.0f);
-            renderShadow.postScale(curDraw.m_shadowScale, -0.75f*curDraw.m_shadowScale);
-            renderShadow.postTranslate(px, py);
-        }
-//        renderShadow.postRotate(m_shadowAngle);
-        Paint shadow = new Paint();
-        shadow.setColorFilter(new PorterDuffColorFilter(m_shadowColour, PorterDuff.Mode.MULTIPLY));
-        canvas.setMatrix(renderShadow);
-//        canvas.drawBitmap(m_bitmap, renderTran, shadow);
-        canvas.drawBitmap(curDraw.m_bitmap, srcRect, new Rect(0, 0, frameWidth, frameHeight), shadow);
-
-        renderTran.postTranslate(px, py);
-        canvas.setMatrix(renderTran);
-        canvas.drawBitmap(curDraw.m_bitmap, srcRect, new Rect(0, 0, frameWidth, frameHeight), null);
-        canvas.setMatrix(orig);
-//        canvas.drawBitmap(m_bitmap, renderTran, null);
-*/
     }
 
     public void Hit(float damage)
     {
-        m_isDead = true;
-        stepTime = 0.0f;
+        m_health -= damage;
         SoundManager.Get().PlaySound(SoundManager.ESoundType.Hit, m_pos);
+        if (m_health <= 0.0f)
+        {
+            m_isDead = true;
+            stepTime = 0.0f;
+            SoundManager.Get().PlaySound(SoundManager.ESoundType.Death, m_pos);
+        }
     }
 
     public void AddHealth(float add)

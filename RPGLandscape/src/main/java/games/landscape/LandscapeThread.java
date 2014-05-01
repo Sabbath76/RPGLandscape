@@ -59,7 +59,7 @@ public class LandscapeThread extends Thread
 
     private Bitmap mSword;
     private Bitmap mPlatypus;
-    private final drawable mArrow;
+    public final drawable mArrow;
 //    private Bitmap mBackgroundImageFar;
 //    private Bitmap mBackgroundImageNear;
 
@@ -156,6 +156,9 @@ public class LandscapeThread extends Thread
         drawable health = new drawable("health");
         health.m_bitmap = healthBMP;//Bitmap.createScaledBitmap(healthBMP, healthBMP.getWidth()/2, healthBMP.getHeight()/2, true);
         health.m_rotateToFacing = true;
+        health.m_shadowOffsX = 8;
+        health.m_shadowOffsY = 8;
+
         drawable.s_health = health;
 
         Bitmap coinsBMP = BitmapFactory.decodeResource(mRes, R.drawable.coinpile);
@@ -181,7 +184,7 @@ public class LandscapeThread extends Thread
         platypus.m_renderAngle = 200.0f;
         platypus.m_rotateToFacing = true;
 
-        m_world.m_player = new Player();
+        m_world.m_player = new Player(health);
         m_world.m_player.m_pos.x = mPosX;
         m_world.m_player.m_pos.y = mPosY;
 
@@ -194,7 +197,17 @@ public class LandscapeThread extends Thread
         mob.m_pos.y = mPosY - 1.0f;
         m_world.m_entityManager.AddCharacter(mob);
 
-        m_world.m_entityManager.addSpawnable(kobold);
+        spawnParams koboldParams = new spawnParams();
+        koboldParams.gfx = kobold;
+        koboldParams.chance = 8;
+        koboldParams.charType = spawnParams.ECharacterType.Normal;
+        m_world.m_entityManager.addSpawnable(koboldParams);
+
+        spawnParams archerParams = new spawnParams();
+        archerParams.gfx = human;
+        archerParams.chance = 1;
+        archerParams.charType = spawnParams.ECharacterType.Archer;
+        m_world.m_entityManager.addSpawnable(archerParams);
     }
 
     public void SetupQuests()
@@ -247,7 +260,7 @@ public class LandscapeThread extends Thread
 
     public void run() {
 
-        SoundManager.Get().PlaySound(SoundManager.ESoundType.Music);
+//        SoundManager.Get().PlaySound(SoundManager.ESoundType.Music);
 
         while (m_run) {
             Canvas c = null;

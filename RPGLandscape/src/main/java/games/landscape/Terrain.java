@@ -108,8 +108,8 @@ public class Terrain {
 
     final float QUAD_SIZE = 0.5f;
 	
-	final int WORLD_SIZE_X = 30;
-	final int WORLD_SIZE_Y = 30;
+	final int WORLD_SIZE_X = 50;
+	final int WORLD_SIZE_Y = 50;
 
     float m_totalTime = 0.0f;
 
@@ -126,7 +126,7 @@ public class Terrain {
 		{
 			for (int y=0; y<WORLD_SIZE_Y; y++)
 			{
-				m_terrain[x][y] = ETerrainType.Grass;
+				m_terrain[x][y] = ETerrainType.Water;
 			}
 		}
 		

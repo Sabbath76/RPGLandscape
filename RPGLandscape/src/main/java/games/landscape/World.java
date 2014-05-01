@@ -4,6 +4,8 @@ import android.graphics.Rect;
 import android.graphics.RectF;
 import android.view.MotionEvent;
 
+import java.util.Random;
+
 /**
  * Created by Tom on 08/06/13.
  */
@@ -14,6 +16,7 @@ public class World
     public Terrain m_terrain;
     public EntityManager m_entityManager;
     public Player m_player;
+    public Random m_random = new Random();
 
     static World s_world;
 
